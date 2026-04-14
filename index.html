@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu-Smart | 역량개발비 자동 정산 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; }
+        .glass-morphism { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 700; }
+        .stagger-item { animation: fadeIn 0.5s ease forwards; opacity: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white shadow-sm px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <i class="fas fa-graduation-cap text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-blue-900">Edu-Smart</h1>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="switchRole('employee')" id="btn-employee" class="px-4 py-2 rounded-full text-sm font-medium transition-all bg-blue-100 text-blue-700">직원 모드</button>
+            <button onclick="switchRole('admin')" id="btn-admin" class="px-4 py-2 rounded-full text-sm font-medium transition-all text-slate-500 hover:bg-slate-100">관리자 모드</button>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto p-6">
+        
+        <!-- Employee View -->
+        <div id="employee-view" class="space-y-6">
+            <!-- Summary Card -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-sm text-slate-500 mb-1">올해 총 한도</p>
+                    <p class="text-2xl font-bold text-slate-900">1,000,000원</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-sm text-slate-500 mb-1">사용 금액</p>
+                    <p class="text-2xl font-bold text-blue-600">350,000원</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-sm text-slate-500 mb-1">잔여 한도</p>
+                    <p class="text-2xl font-bold text-emerald-600">650,000원</p>
+                </div>
+            </div>
+
+            <!-- Application Form -->
+            <div class="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-100">
+                    <h2 class="font-bold text-slate-700">역량개발비 신청서 작성</h2>
+                </div>
+                <form id="apply-form" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">교육 일자</label>
+                            <input type="date" id="edu-date" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">교육 업체 (기관)</label>
+                            <input type="text" id="edu-company" placeholder="예: 인프런, 패스트캠퍼스" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">교육 방식</label>
+                            <select id="edu-type" class="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none">
+                                <option>온라인</option>
+                                <option>오프라인</option>
+                                <option>도서 구입</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">항목 종류</label>
+                            <select id="edu-category" class="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none">
+                                <option>교육비</option>
+                                <option>세미나/컨퍼런스</option>
+                                <option>자격증 응시료</option>
+                                <option>도서</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2 flex items-center gap-1">
+                                교육 비용 (원)
+                                <i class="fas fa-circle-info text-xs text-slate-400 cursor-help" title="실제 영수증 결제 금액"></i>
+                            </label>
+                            <input type="number" id="edu-cost" placeholder="숫자만 입력" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-slate-600 mb-2">과세/비과세</label>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="setTax(true)" id="tax-yes" class="flex-1 py-2 border border-slate-200 rounded-lg bg-blue-50 text-blue-600 font-bold border-blue-200">과세</button>
+                                    <button type="button" onclick="setTax(false)" id="tax-no" class="flex-1 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">비과세</button>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-slate-600 mb-2">직무 관련</label>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="setJob(true)" id="job-yes" class="flex-1 py-2 border border-slate-200 rounded-lg bg-blue-50 text-blue-600 font-bold border-blue-200">직무</button>
+                                    <button type="button" onclick="setJob(false)" id="job-no" class="flex-1 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">비직무</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-600">결제 영수증 첨부</label>
+                            <div class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer" onclick="document.getElementById('file-receipt').click()">
+                                <i class="fas fa-file-invoice-dollar text-3xl text-slate-300 mb-2"></i>
+                                <p class="text-xs text-slate-500">이미지 또는 PDF 업로드</p>
+                                <input type="file" id="file-receipt" class="hidden" onchange="handleFile(this, 'receipt-preview')">
+                                <div id="receipt-preview" class="mt-2 text-blue-600 text-xs font-medium"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-600">수료증/결과지 첨부</label>
+                            <div class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer" onclick="document.getElementById('file-cert').click()">
+                                <i class="fas fa-award text-3xl text-slate-300 mb-2"></i>
+                                <p class="text-xs text-slate-500">수료증 또는 성적표</p>
+                                <input type="file" id="file-cert" class="hidden" onchange="handleFile(this, 'cert-preview')">
+                                <div id="cert-preview" class="mt-2 text-blue-600 text-xs font-medium"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                        신청하기 (AI 자동 검수 시작)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Admin View -->
+        <div id="admin-view" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-800">미결재 신청 내역 <span class="text-blue-600 text-sm ml-2" id="pending-count">2건</span></h2>
+                <div class="flex gap-2">
+                    <button class="text-sm px-3 py-1 bg-slate-100 rounded text-slate-600">전체보기</button>
+                    <button class="text-sm px-3 py-1 bg-blue-600 rounded text-white font-medium">지급용 데이터 추출</button>
+                </div>
+            </div>
+
+            <!-- List of Applications -->
+            <div id="admin-list" class="space-y-4">
+                <!-- Data will be injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Success/Processing -->
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] px-4">
+        <div class="bg-white p-8 rounded-2xl max-w-sm w-full text-center shadow-2xl">
+            <div id="modal-content" class="space-y-4">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-spinner fa-spin text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold">AI 자동 검토 중...</h3>
+                <p class="text-slate-500 text-sm">영수증 텍스트를 추출하여 입력하신 내용과 대조하고 있습니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Data Storage
+        let applications = [
+            {
+                id: 1,
+                name: "김철수",
+                dept: "UX 디자인팀",
+                date: "2023-10-15",
+                company: "패스트캠퍼스",
+                category: "교육비",
+                cost: 150000,
+                isTaxable: true,
+                isJobRelated: true,
+                status: "부서장승인",
+                aiScore: 98,
+                aiDetails: "금액/상호명/날짜 100% 일치"
+            },
+            {
+                id: 2,
+                name: "이영희",
+                dept: "전략기획팀",
+                date: "2023-10-18",
+                company: "교보문고",
+                category: "도서",
+                cost: 42000,
+                isTaxable: false,
+                isJobRelated: false,
+                status: "담당자검토중",
+                aiScore: 75,
+                aiDetails: "영수증 금액(45,000원)과 입력값 불일치 의심"
+            }
+        ];
+
+        let isTaxable = true;
+        let isJobRelated = true;
+
+        // Functions
+        function switchRole(role) {
+            const empView = document.getElementById('employee-view');
+            const admView = document.getElementById('admin-view');
+            const btnEmp = document.getElementById('btn-employee');
+            const btnAdm = document.getElementById('btn-admin');
+
+            if (role === 'employee') {
+                empView.classList.remove('hidden');
+                admView.classList.add('hidden');
+                btnEmp.className = "px-4 py-2 rounded-full text-sm font-medium transition-all bg-blue-100 text-blue-700";
+                btnAdm.className = "px-4 py-2 rounded-full text-sm font-medium transition-all text-slate-500 hover:bg-slate-100";
+            } else {
+                empView.classList.add('hidden');
+                admView.classList.remove('hidden');
+                btnAdm.className = "px-4 py-2 rounded-full text-sm font-medium transition-all bg-blue-100 text-blue-700";
+                btnEmp.className = "px-4 py-2 rounded-full text-sm font-medium transition-all text-slate-500 hover:bg-slate-100";
+                renderAdminList();
+            }
+        }
+
+        function setTax(val) {
+            isTaxable = val;
+            document.getElementById('tax-yes').className = val ? "flex-1 py-2 border border-blue-200 rounded-lg bg-blue-50 text-blue-600 font-bold" : "flex-1 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors";
+            document.getElementById('tax-no').className = !val ? "flex-1 py-2 border border-blue-200 rounded-lg bg-blue-50 text-blue-600 font-bold" : "flex-1 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors";
+        }
+
+        function setJob(val) {
+            isJobRelated = val;
+            document.getElementById('job-yes').className = val ? "flex-1 py-2 border border-blue-200 rounded-lg bg-blue-50 text-blue-600 font-bold" : "flex-1 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors";
+            document.getElementById('job-no').className = !val ? "flex-1 py-2 border border-blue-200 rounded-lg bg-blue-50 text-blue-600 font-bold" : "flex-1 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors";
+        }
+
+        function handleFile(input, previewId) {
+            if (input.files && input.files[0]) {
+                document.getElementById(previewId).innerText = "📎 " + input.files[0].name;
+            }
+        }
+
+        document.getElementById('apply-form').onsubmit = function(e) {
+            e.preventDefault();
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // AI Simulation
+            setTimeout(() => {
+                modalContent.innerHTML = `
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold">신청 완료!</h3>
+                    <p class="text-slate-500 text-sm">AI 검수 결과 '일치(98점)'로 판정되었습니다.<br>부서장 승인 단계로 넘어갑니다.</p>
+                    <button onclick="closeModal()" class="mt-4 w-full bg-slate-900 text-white py-2 rounded-lg">확인</button>
+                `;
+
+                // Add to list
+                const newApp = {
+                    id: Date.now(),
+                    name: "본인",
+                    dept: "마케팅팀",
+                    date: document.getElementById('edu-date').value,
+                    company: document.getElementById('edu-company').value,
+                    category: document.getElementById('edu-category').value,
+                    cost: parseInt(document.getElementById('edu-cost').value),
+                    isTaxable: isTaxable,
+                    isJobRelated: isJobRelated,
+                    status: "담당자검토중",
+                    aiScore: 99,
+                    aiDetails: "실시간 대조 결과 모든 항목 일치"
+                };
+                applications.unshift(newApp);
+            }, 2500);
+        };
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            // Reset form
+            document.getElementById('apply-form').reset();
+            document.querySelectorAll('[id$="-preview"]').forEach(el => el.innerText = "");
+        }
+
+        function renderAdminList() {
+            const list = document.getElementById('admin-list');
+            document.getElementById('pending-count').innerText = applications.length + "건";
+            list.innerHTML = applications.map(app => `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 stagger-item">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">${app.category}</span>
+                            <span class="text-xs font-bold ${app.status === '부서장승인' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'} px-2 py-0.5 rounded">${app.status}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800">${app.company} - ${app.cost.toLocaleString()}원</h3>
+                        <p class="text-sm text-slate-500">${app.name} (${app.dept}) | ${app.date}</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="text-center px-2">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AI 검수 점수</p>
+                            <p class="text-lg font-black ${app.aiScore >= 90 ? 'text-emerald-500' : 'text-rose-500'}">${app.aiScore}점</p>
+                        </div>
+                        <div class="h-8 w-[1px] bg-slate-200"></div>
+                        <div class="flex-1">
+                            <p class="text-xs font-medium text-slate-700">${app.aiDetails}</p>
+                            <div class="flex gap-2 mt-1">
+                                <button class="text-[10px] text-blue-600 font-bold hover:underline">영수증 보기</button>
+                                <button class="text-[10px] text-blue-600 font-bold hover:underline">수료증 보기</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="deleteApp(${app.id})" class="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors">반려</button>
+                        <button onclick="deleteApp(${app.id})" class="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all">승인</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteApp(id) {
+            applications = applications.filter(a => a.id !== id);
+            renderAdminList();
+        }
+
+        // Init
+        window.onload = () => {
+            renderAdminList();
+        };
+    </script>
+</body>
+</html>
